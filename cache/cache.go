@@ -1,7 +1,7 @@
-package cache_go
+package cache
 
 import (
-	"cache_go/lru"
+	"cache_go/cache/lru"
 	"sync"
 )
 

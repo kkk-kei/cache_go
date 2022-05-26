@@ -1,0 +1,1 @@
+1、NewGroup()判断Group是否已经存在

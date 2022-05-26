@@ -1,4 +1,4 @@
-package cache_go
+package cache
 
 import (
 	"fmt"
