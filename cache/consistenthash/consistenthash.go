@@ -28,6 +28,7 @@ func New(replicas int, hash Hash) *Map {
 }
 
 func (m *Map) Add(keys ...string) {
+	//对于同一个key虚拟出多个节点
 	for _, key := range keys {
 		for i := 0; i < m.replicas; i++ {
 			hash := int(m.hash([]byte(strconv.Itoa(i) + key)))
