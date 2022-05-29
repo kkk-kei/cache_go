@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"cache_go/cache/cachepb"
 	"cache_go/cache/signleflight"
 	"fmt"
 	"log"
@@ -83,11 +84,15 @@ func (g *Group) load(key string) (value ByteView, err error) {
 }
 
 func (g *Group) getFromPeer(peer PeerGetter, key string) (ByteView, error) {
-	bytes, err := peer.Get(g.name, key) //向不同节点的相同名字的缓存取数据
+	//bytes, err := peer.Get(g.name, key) //向不同节点的相同名字的缓存取数据
+	req := &cachepb.Request{Group: g.name, Key: key}
+	res := &cachepb.Response{}
+	err := peer.Get(req, res)
 	if err != nil {
 		return ByteView{}, err
 	}
-	return ByteView{cloneBytes(bytes)}, nil
+
+	return ByteView{res.Value}, nil
 }
 
 func (g *Group) getLocally(key string) (ByteView, error) {
