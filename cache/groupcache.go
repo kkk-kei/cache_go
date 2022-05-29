@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"cache_go/cache/signleflight"
 	"fmt"
 	"log"
 	"sync"
@@ -21,6 +22,7 @@ type Group struct {
 	getter    Getter
 	mainCache cache      //本地缓存
 	peers     PeerPicker //远程节点
+	loader    *signleflight.Group
 }
 
 var (
@@ -38,6 +40,7 @@ func NewGroup(name string, cacheBytes int64, getter Getter) *Group {
 		name:      name,
 		getter:    getter,
 		mainCache: cache{cacheBytes: cacheBytes},
+		loader:    &signleflight.Group{},
 	}
 	groups[name] = g
 	return g
@@ -62,15 +65,21 @@ func (g *Group) Get(key string) (ByteView, error) {
 }
 
 func (g *Group) load(key string) (value ByteView, err error) {
-	if g.peers != nil {
-		if peer, ok := g.peers.PickPeer(key); ok {
-			if value, err = g.getFromPeer(peer, key); err == nil {
-				return value, nil
+	viewi, err := g.loader.Do(key, func() (interface{}, error) {
+		if g.peers != nil {
+			if peer, ok := g.peers.PickPeer(key); ok {
+				if value, err = g.getFromPeer(peer, key); err == nil {
+					return value, nil
+				}
+				log.Println("[GroupCache] Failed to get from peer", err)
 			}
-			log.Println("[GroupCache] Failed to get from peer", err)
 		}
+		return g.getLocally(key)
+	})
+	if err == nil {
+		return viewi.(ByteView), err
 	}
-	return g.getLocally(key)
+	return
 }
 
 func (g *Group) getFromPeer(peer PeerGetter, key string) (ByteView, error) {
